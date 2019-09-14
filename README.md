@@ -1,2 +1,8 @@
-# Project2
-DataVis project 2
+# Opioid Epidemic
+## DataVis Project 2
+
+### Members
+* Chris Glessner
+* Ashok Singh
+* Chris McCown
+* Gilberto Ramirez
