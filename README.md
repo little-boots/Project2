@@ -1,5 +1,5 @@
 # Opioid Epidemic
-## DataVis Project 2
+## DataViz Project 2
 
 ### Members
 * Chris Glessner
