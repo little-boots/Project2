@@ -1,5 +1,6 @@
 # Opioid Epidemic
 > The opioid epidemic or opioid crisis is the rapid increase in the use of prescription and non-prescription opioid drugs in the United States and Canada beginning in the late 1990s and continuing throughout the next two decades.
+
 [Wikipedia](https://en.wikipedia.org/wiki/Opioid_epidemic)
 
 ## Research Question
