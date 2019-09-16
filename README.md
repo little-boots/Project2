@@ -18,7 +18,9 @@ We will investigate the impact of the Opioid Crisis in the United States.  Speci
 
 ## Data Sources
 [Washington Post DEA Pain Pill Database](https://www.washingtonpost.com/graphics/2019/investigations/dea-pain-pill-database/)
+
 [Washington Post ARCOS API](https://arcos-api.ext.nile.works/__swagger__/)
+
 [CDC WONDER](https://wonder.cdc.gov/)
 
 ## References
