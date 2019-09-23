@@ -134,27 +134,6 @@ function drawGrid() {
   dropdownMenu.append("a").attr("class", "dropdown-item").attr("href", "#")
       .text("Amneal Pharmaceuticals");
 
-  // second dropdown button: Year
-  var dropdown = flexBox
-    .append("div").attr("class", "dropdown");
-  dropdown
-    .append("button")
-      .attr("class", "btn btn-info dropdown-toggle")
-      .attr("type", "button")
-      .attr("id", "dropdownMenuButton")
-      .attr("data-toggle", "dropdown")
-      .attr("aria-haspopup", "true").attr("aria-expanded", "false")
-      .text("Year");
-  var dropdownMenu = dropdown
-    .append("div").attr("class", "dropdown-menu").attr("aria-labelledby", "dropdownMenuButton");
-  dropdownMenu.append("a").attr("class", "dropdown-item").attr("href", "#")
-      .text("All Years");
-  dropdownMenu.append("div").attr("class", "dropdown-divider");
-  for(var i = 2006; i <= 2012; i++) {
-    dropdownMenu.append("a").attr("class", "dropdown-item").attr("href", "#")
-      .text(i);
-  }
-
   // add SVG
   cell.append("svg").attr("id", "choropleth-manufacturer");
 
