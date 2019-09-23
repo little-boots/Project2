@@ -1,4 +1,3 @@
-from credentials import postgres_user, postgres_passwd
 import csv
 import re
 from sqlalchemy.orm import Session
@@ -7,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 import datetime
 import random
+import os
 
 Base = declarative_base()
 
@@ -33,6 +33,101 @@ session = Session(engine)
 ######---------------------------------#####
 # Import from full data
 ######---------------------------------#####
+
+statelist = [
+    'AL',
+    'AK',
+    'AZ',
+    'AR',
+    'CA',
+    'CO',
+    'CT',
+    'DE',
+    'DC',
+    'FL',
+    'GA',
+    'HI',
+    'ID',
+    'IL',
+    'IN',
+    'IA',
+    'KS',
+    'KY',
+    'LA',
+    'ME',
+    'MD',
+    'MA',
+    'MI',
+    'MN',
+    'MS',
+    'MO',
+    'MT',
+    'NE',
+    'NV',
+    'NH',
+    'NJ',
+    'NM',
+    'NY',
+    'NC',
+    'ND',
+    'OH',
+    'OK',
+    'OR',
+    'PA',
+    'RI',
+    'SC',
+    'SD',
+    'TN',
+    'TX',
+    'UT',
+    'VT',
+    'VA',
+    'WA',
+    'WV',
+    'WI',
+    'WY'
+]
+
+# al = pd.read_csv('data/statelevel/AL.tsv', delimiter='\t')
+# print(al.columns)
+
+def getStateTSV():
+    total = 0
+    dt = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
+    print(f"{dt} (Start)")
+    rowIndex = getRowIndex()
+
+    # Iterate over all rows
+    with open('data/arcos_all_washpost.tsv') as read_tsv:
+        for row in csv.reader(read_tsv,
+                            delimiter='\t'):
+
+
+            # Output row count and time to monitor progress
+            rdt = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
+            total += 1
+            if total % 100000 == 0:
+                print(f"{rdt}: {total}")
+
+            # First row contains header
+            if total==1:
+                # Initialize state TSVs
+                for state in statelist:
+                    # Delete old TSV, if one exists
+                    try:
+                        os.remove(f'data/statelevel/{state}.tsv')
+                    except:
+                        pass
+                    # Write the header to a new TSV file
+                    with open(f'data/statelevel/{state}.tsv', 'w') as write_tsv:
+                        write_tsv.write('\t'.join(row))
+                continue
+
+            # Output to state-level TSV
+            else:
+                us_state = row[rowIndex['BUYER_STATE']]
+                with open(f'data/statelevel/{us_state}.tsv', 'a') as write_tsv:
+                    write_tsv.write('\t'.join(row))
 
 def buildDB2():
     data = pd.read_csv('data/arcos_all_washpost.tsv',
@@ -156,7 +251,7 @@ def parseDate(date):
     if not re.match(dateFormat, date): return None
     else: return int(date[-4:])
 
-buildDB()
+#buildDB(pct=1)
 
 """
 print(session.query(Transaction.distributor_name,
@@ -167,3 +262,6 @@ print(session.query(Transaction.distributor_name,
                     Transaction.tot_dose,
                     Transaction.tot_pills).all())
                     """
+
+
+getStateTSV()
