@@ -1,3 +1,6 @@
+// This JavaScript is used to build a legend in d3 for the choropleths.
+// Fetched on Sep 24 2019
+
 function legend({
     color,
     title,

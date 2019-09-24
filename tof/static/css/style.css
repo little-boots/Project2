@@ -28,6 +28,7 @@
   pointer-events: none;
 }
 
+/* Below styles are used for d3 tooltips used in choropleths visualizations
 .d3-tip {
   line-height: 1;
   padding: 12px;

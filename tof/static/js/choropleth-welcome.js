@@ -1,3 +1,12 @@
+// This JavaScript is used to build a choropleth showing average number of pills
+// per person per year at county level in the US based on the DEA records posted by
+// the Washington Post on July 2019. This choropleth is used as part of the landing
+// page of Project 2 for the UNC Data Analytics Bootcamp.
+// 
+// Created on Sep 24 2019
+// --Gilberto Ramirez (gramirez77@gmail.com)
+
+// draw or redraw the Welcome choropleth
 function redrawWelcomeChroroplethMap() {
 
   // get width corresponding to first column in Bootstrap grid
@@ -100,8 +109,8 @@ function redrawWelcomeChroroplethMap() {
   });
 }
 
-// draw for the first time to initialize
+// draw the Welcome choropleth for the first time when the page is being initilized
 redrawWelcomeChroroplethMap();
 
-// redraw based on the new size whenever the browser window is resized
+// redraw the Welcome choropleth based on the new size whenever the browser window is resized
 window.addEventListener("resize", redrawWelcomeChroroplethMap);
