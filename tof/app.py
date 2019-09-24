@@ -24,91 +24,46 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/tof.sqlite'
 db = SQLAlchemy(app)
 
-# reflect an existing database into a new model
-Base = automap_base()
-
-# reflect the tables
-Base.prepare(db.engine, reflect=True)
-
-# save references to each table
-Counties = Base.classes.counties
-Total_manufacturers_county = Base.classes.total_manufacturers_county
-
 
 @app.route('/')
 def index():
-    """Return to the homepage."""
+    """Go to the homepage"""
     return render_template("index.html")
 
 
-# @app.route('/manufacturers')
-# def index():
-#     """Return to the homepage."""
-#     return render_template("manufacturers.html")
+@app.route('/manufacturer')
+def manufacturer():
+    """Go to the manufacturers analysis"""
+    return render_template("manufacturer.html")
 
 
-# @app.route('/names')
-# def names():
-#     """Return a list of sample names."""
+@app.route('/top10manufacturers')
+def top10manufacturers():
+    """Return a list of top 10 manufacturers"""
 
-#     # use Pandas to perform the SQL query
-#     stmt = db.session.query(Samples).statement
-#     df = pd.read_sql_query(stmt, db.session.bind)
+    sql  = '   SELECT combined_labeler_name, SUM(total_dosage_unit) AS pills'
+    sql += '     FROM total_manufacturers_county'
+    sql += ' GROUP BY combined_labeler_name'
+    sql += ' ORDER BY pills DESC'
+    sql += ' LIMIT 10;'
+    df = pd.read_sql_query(sql, db.engine)
 
-#     # return a list of the column names (sample names)
-#     return jsonify(list(df.columns)[2:])
-
-
-# @app.route("/metadata/<sample>")
-# def sample_metadata(sample):
-#     """Return the MetaData for a given sample."""
-
-#     sel = [
-#         Samples_Metadata.sample,
-#         Samples_Metadata.ETHNICITY,
-#         Samples_Metadata.GENDER,
-#         Samples_Metadata.AGE,
-#         Samples_Metadata.LOCATION,
-#         Samples_Metadata.BBTYPE,
-#         Samples_Metadata.WFREQ,
-#     ]
-#     results = db.session.query(*sel).filter(Samples_Metadata.sample == sample).all()
-
-#     # create a dictionary entry for each row of metadata information
-#     sample_metadata = {}
-#     for result in results:
-#         sample_metadata["sample"] = result[0]
-#         sample_metadata["ETHNICITY"] = result[1]
-#         sample_metadata["GENDER"] = result[2]
-#         sample_metadata["AGE"] = result[3]
-#         sample_metadata["LOCATION"] = result[4]
-#         sample_metadata["BBTYPE"] = result[5]
-#         sample_metadata["WFREQ"] = result[6]
-
-#     print(sample_metadata)
-#     return jsonify(sample_metadata)
+    return jsonify(list(df['combined_labeler_name']))
 
 
-# @app.route("/samples/<sample>")
-# def samples(sample):
-#     """Return `otu_ids`, `otu_labels`, and `sample_values`."""
-#     stmt = db.session.query(Samples).statement
-#     df = pd.read_sql_query(stmt, db.session.bind)
+@app.route('/pillsByManufacturer/<manufacturerName>')
+def pillsByManufacturer(manufacturerName):
+    """Return total number of pills per manufacturer"""
 
-#     # filter the data based on the sample number and
-#     # only keep rows with values above 1
-#     sample_data = df.loc[df[sample] > 1, ["otu_id", "otu_label", sample]]
+    sql  = '   SELECT fips, avg_pills_per_person'
+    sql += '     FROM total_manufacturers_county'
+    sql += '    WHERE combined_labeler_name = "' + manufacturerName + '";'
+    df = pd.read_sql_query(sql, db.engine)
+    df = df.round(4)
+    df.set_index('fips', inplace=True)
 
-#     # sort by sample
-#     sample_data.sort_values(by=sample, ascending=False, inplace=True)
-
-#     # format the data to send as json
-#     data = {
-#         "otu_ids":       sample_data.otu_id.values.tolist(),
-#         "otu_labels":    sample_data.otu_label.tolist(),
-#         "sample_values": sample_data[sample].values.tolist(),
-#     }
-#     return jsonify(data)
+    # return a list of the column names (sample names)
+    return df.to_json(orient='columns')
 
 
 if __name__ == "__main__":

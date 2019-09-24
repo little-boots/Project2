@@ -1,18 +1,21 @@
-function redrawWelcomeChroroplethMap() {
+function drawManufacturerChoropleth(whereToDraw, manufacturer) {
 
   // get width corresponding to first column in Bootstrap grid
   // this will be used to define the SVG width
+  // since all four cells should have same width, just using the first should be fine
   var width = $(".col-sm-6:first-child").width();
 
   // map has a standard width:height ratio of 960:610
   // SVG height should be calculated based on width and fixed ratio 
   var height = width * 610/960;
 
-  // remove elements within SVG that will hold new choropleth
-  d3.selectAll("svg > *").remove();
+  // remove elements within SVG in cell that needs to hold new/updated choropleth
+  var cell = d3.select("div#" + whereToDraw)
+    .select("svg").remove();
 
-  // change attributes of SVG element that will hold the choropleth
-  var svg = d3.select("#choropleth-manufacturer")
+  // create SVG element that will hold the choropleth
+  var svg = d3.select("div#" + whereToDraw)
+    .append("svg")
     .attr("width", width)
     .attr("height", height)
 
@@ -25,8 +28,9 @@ function redrawWelcomeChroroplethMap() {
     .range(d3.schemeReds[9]);
 
   // create the legend
-  var title = "Average number of pills per person per year (2006 through 2012)"
+  var title = "Average number of pills per person between 2006 and 2012"
   svg.append("g")
+    .attr("id", whereToDraw)
     .attr("transform", `translate(${height-100}, 0)`)
     .append(() => legend({
       color, 
@@ -37,14 +41,11 @@ function redrawWelcomeChroroplethMap() {
   d3.json("static/data/counties-albers-10m.json").then(function(us) {
 
     // csv file contains data (average pills per person per year) to be used in the choropleth
-    d3.csv("static/data/welcome-choropleth-data.csv").then(function(csvdata) {
+    d3.json("pillsByManufacturer/" + encodeURI(manufacturer)).then(function(response) {
 
       // create an object to get average pills per person by county ID
       // first two digits of county ID is state ID!
-      var data = {};
-      csvdata.forEach(function(d) {
-        data[d.countyfips] = +d.avg_pills_per_person;
-      });
+      var data = response.avg_pills_per_person;
 
       // create an object to get state names by state ID
       var states = {};
@@ -58,7 +59,7 @@ function redrawWelcomeChroroplethMap() {
         .offset([-10, 0])
         .html(function(d) {
           return `<p><strong>${d.properties.name} County, ${states[d.id.slice(0,2)]}</strong>
-            <p>${(data[d.id] || 0).toFixed(1)} pills per person per year`;
+            <p>${parseFloat(data[d.id] || 0).toFixed(1)} pills per person between 2006 and 2012`;
         })
 
       // invoke the tip in the context of the visualization //
@@ -102,37 +103,28 @@ function redrawWelcomeChroroplethMap() {
 
 function drawGrid() {
 
-  var cell = d3.selectAll(".col-sm-6");
+  var selectLocation = ['TopLeft', 'TopRight', 'BottomLeft', 'BottomRight'];
+
+  var cell = d3.selectAll(".col-sm-6")
+    .data(selectLocation)
+    .attr("id", d => d);
 
   // add Bootstrap flexbox
   var flexBox = cell.append("div").attr("class", "d-flex flex-row");
 
-  // first dropdown button: Manufacturer
-  var dropdown = flexBox
-    .append("div").attr("class", "dropdown");
-  dropdown
-    .append("button")
-      .attr("class", "btn btn-primary dropdown-toggle")
-      .attr("type", "button")
-      .attr("id", "dropdownMenuButton")
-      .attr("data-toggle", "dropdown")
-      .attr("aria-haspopup", "true").attr("aria-expanded", "false")
-      .text("Manufacturer");
-  var dropdownMenu = dropdown
-    .append("div").attr("class", "dropdown-menu").attr("aria-labelledby", "dropdownMenuButton");
-  dropdownMenu.append("a").attr("class", "dropdown-item").attr("href", "#")
-      .text("All Manufacturers");
-  dropdownMenu.append("div").attr("class", "dropdown-divider");
-  dropdownMenu.append("a").attr("class", "dropdown-item").attr("href", "#")
-      .text("SpecGx");
-  dropdownMenu.append("a").attr("class", "dropdown-item").attr("href", "#")
-      .text("Actavis Pharma");
-  dropdownMenu.append("a").attr("class", "dropdown-item").attr("href", "#")
-      .text("Par Pharmaceutical");
-  dropdownMenu.append("a").attr("class", "dropdown-item").attr("href", "#")
-      .text("Purdue Pharma");
-  dropdownMenu.append("a").attr("class", "dropdown-item").attr("href", "#")
-      .text("Amneal Pharmaceuticals");
+  // dropdown button: Manufacturer
+  var select = flexBox
+    .data(selectLocation)
+    .append("select").attr("class", "custom-select")
+      .attr("id", d => d);
+  select.append("option").attr("selected", "selected").text("(Select a Manufacturer)");
+  d3.json("top10manufacturers").then(function(response) {
+    response.forEach(function(d) {
+      select
+        .data(selectLocation)
+        .append("option").attr("value", d).text(d)
+    })
+  })
 
   // add SVG
   cell.append("svg").attr("id", "choropleth-manufacturer");
@@ -141,7 +133,22 @@ function drawGrid() {
 
 drawGrid();
 
-redrawWelcomeChroroplethMap();
+// add the event listener to the four selectors
+d3.selectAll('.custom-select')
+  .on('change', function() {
+    var whereToDraw = d3.select(this).property('__data__');
+    var manufacturer = d3.select(this).property('value');
+    drawManufacturerChoropleth(whereToDraw, manufacturer);
+});
+
+function redrawAllManufacturerChoropleths() {
+  drawManufacturerChoropleth("TopLeft",     d3.select('.custom-select#TopLeft').property('value'));
+  drawManufacturerChoropleth("TopRight",    d3.select('.custom-select#TopRight').property('value'));
+  drawManufacturerChoropleth("BottomLeft",  d3.select('.custom-select#BottomLeft').property('value'));
+  drawManufacturerChoropleth("BottomRight", d3.select('.custom-select#BottomRight').property('value'));
+}
+
+redrawAllManufacturerChoropleths();
 
 // redraw based on the new size whenever the browser window is resized
-window.addEventListener("resize", redrawWelcomeChroroplethMap);
+window.addEventListener("resize", redrawAllManufacturerChoropleths);
