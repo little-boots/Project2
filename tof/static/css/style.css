@@ -1,7 +1,11 @@
 /* used in Welcome page */
+.post h1 {
+  font-size: 3vh;
+}
+
 .post p {
   max-width: 40rem;
-  font-size: 125%;
+  font-size: 1.75vh;
 }
 
 /* used to style Welcome Choropleth SVG */
