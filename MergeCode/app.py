@@ -139,7 +139,7 @@ def chartjs():
 # this route provides the data for the state dropdown menus
 @app.route("/states")
 def states():
-    engine = create_engine("sqlite:///db/arcos_data.sqlite")
+    engine = create_engine("sqlite:///db/tof.sqlite")
     connection = engine.connect()
 
     result = connection.execute("SELECT DISTINCT us_state FROM tblByCountyAndYear ORDER BY us_state").fetchall()
@@ -155,7 +155,7 @@ def states():
 # this route provides the data for the county dropdown for a given state
 @app.route("/counties/<state>")
 def counties(state):
-    engine = create_engine("sqlite:///db/arcos_data.sqlite")
+    engine = create_engine("sqlite:///db/tof.sqlite")
     connection = engine.connect()
 
     result = connection.execute(f"SELECT DISTINCT us_county FROM tblByCountyAndYear WHERE us_state = '{state}' ORDER BY us_county").fetchall()
@@ -173,7 +173,7 @@ def counties(state):
 def chartData(state,county):
 
     # get data from the db
-    engine = create_engine("sqlite:///db/arcos_data.sqlite")
+    engine = create_engine("sqlite:///db/tof.sqlite")
     connection = engine.connect()
 
     # add state and nation views to the db and replace the state and nation queries below with queries to those views. faster/more efficient?
@@ -239,7 +239,7 @@ def chartData(state,county):
 def sankeyData(state,county):
 
     # connect to the db
-    engine = create_engine("sqlite:///db/arcos_data.sqlite")
+    engine = create_engine("sqlite:///db/tof.sqlite")
     connection = engine.connect()
 
     sql = f"SELECT * FROM tblByCountyAndYear WHERE us_state = '{state}' AND us_county = '{county}'"
