@@ -107,13 +107,18 @@ def moveStateTSV_remote(states):
             print(f'{dt}: Preparing to move {state} (size unknown)')
         shutil.move(f'state/{state}.tsv', f'data/statelevel/{state}.tsv')
 
+def buyerCat(buyStr):
+    if 'PRACTITIONER' in buyStr: return 'PRACTITIONER'
+    elif 'PHARMACY' in buyStr: return 'PHARMACY'
+
 # Loop over all the TSVs, build dataframes, merge, and output
-def buildSQL(states=statelist):
+def buildSQL(states=statelist,
+             dbname='transactions'):
     try:
-        os.remove('db/transactions.sqlite')
+        os.remove(f'db/{dbname}.sqlite')
     except OSError:
         pass
-    localengine = create_engine(f'sqlite:///db/transactions.sqlite')
+    localengine = create_engine(f'sqlite:///db/{dbname}.sqlite')
     Base.metadata.create_all(localengine)
 
     rowIndex = getRowIndex()
@@ -125,12 +130,11 @@ def buildSQL(states=statelist):
                          usecols=[
                              rowIndex['Combined_Labeler_Name'],
                              rowIndex['Reporter_family'],
-                             rowIndex['TRANSACTION_DATE'],
+                             rowIndex['BUYER_NAME'],
                              rowIndex['BUYER_STATE'],
                              rowIndex['BUYER_COUNTY'],
-                             rowIndex['QUANTITY'],
+                             rowIndex['TRANSACTION_DATE'],
                              rowIndex['DOSAGE_UNIT'],
-                             rowIndex['dos_str'],
                              rowIndex['REPORTER_BUS_ACT'],
                              rowIndex['BUYER_BUS_ACT']
                          ],
@@ -138,39 +142,40 @@ def buildSQL(states=statelist):
                          skip_blank_lines=False
                          )
 
-        # I misnamed a column...
-        myDosStr = [column for column in df.columns if column.startswith('dos_str')][0]
+        # Rename practitioners to reduce data
+        df['buy_bus'] = df['BUYER_BUS_ACT'].apply(buyerCat)
 
-        df['pills'] = df['QUANTITY'].fillna(0) * df['DOSAGE_UNIT'].fillna(0)
-        df['mgs'] = df['pills'].fillna(0) * df[f'{myDosStr}'].fillna(0)
-
+        # Derived variables
         df['YEAR'] = df['TRANSACTION_DATE'].astype('str').apply(parseDate)
+        df['pills'] = df['DOSAGE_UNIT'].fillna(0)
+
+        # Rename practiioners so you don't end up with too much data
+        df.loc[df['buy_bus'] == 'PRACTITIONER', 'BUYER_NAME'] =\
+            'JOE PRACTIONER, M.D.'
 
         df_gb = df\
             .groupby(['Combined_Labeler_Name',
-                            'Reporter_family',
-                            'YEAR',
-                            'BUYER_STATE',
-                            'BUYER_COUNTY',
-                            'REPORTER_BUS_ACT',
-                            'BUYER_BUS_ACT'])\
-            [['pills', 'mgs']]\
+                      'Reporter_family',
+                      'BUYER_NAME',
+                      'BUYER_STATE',
+                      'BUYER_COUNTY',
+                      'YEAR',
+                      'REPORTER_BUS_ACT',
+                      'BUYER_BUS_ACT'])\
+            ['pills']\
             .sum()\
             .reset_index()
 
         reduced = df_gb\
             .rename(columns={'Combined_Labeler_Name': 'manufacturer_name',
                              'Reporter_family':       'distributor_name',
-                             'YEAR':                  'year',
+                             'BUYER_NAME':            'buyer_name',
                              'BUYER_STATE':           'us_state',
                              'BUYER_COUNTY':          'us_county',
+                             'YEAR':                  'year',
                              'REPORTER_BUS_ACT':      'reporter_bus',
-                             'BUYER_BUS_ACT':         'buyer_bus',
-                             'pills':                 'tot_pills',
-                             'mgs':                   'tot_dose'})\
-            .loc[(df_gb['pills'] >= 1000)]
-
-        reduced.reset_index()
+                             'buy_bus':               'buyer_bus',
+                             'pills':                 'tot_pills'})
 
         dt = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
         print(f'{dt}: {state} ready to merge')
@@ -198,4 +203,5 @@ def runAllStates(states):
     moveStateTSV_remote(states)
     buildSQL(states)
 
-buildSQL()
+buildSQL(states=['KY', 'WV', 'VA', 'SC'],
+         dbname='elChapo')
