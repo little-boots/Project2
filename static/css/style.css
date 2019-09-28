@@ -7,7 +7,7 @@ html {
 /* used in Welcome page */
 .post p {
   max-width: 40rem;
-  font-size: 125%;
+  font-size: 1.75vh;
 }
 
 /* used to style Welcome Choropleth SVG */
@@ -34,7 +34,7 @@ html {
   pointer-events: none;
 }
 
-/* Below styles are used for d3 tooltips used in choropleths visualizations
+/* Below styles are used for d3 tooltips used in choropleths visualizations */
 .d3-tip {
   line-height: 1;
   padding: 12px;
@@ -76,4 +76,5 @@ html {
 
 /* chartjs styling */
 .card-title {
-  text-align: c
+  text-align: center;
+}
