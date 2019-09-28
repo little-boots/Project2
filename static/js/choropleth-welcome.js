@@ -36,7 +36,7 @@ function redrawWelcomeChroroplethMap() {
   // create the legend
   var title = "Average number of pills per person per year (2006 through 2012)"
   svg.append("g")
-    .attr("transform", `translate(${height}, 20)`)
+    .attr("transform", `translate(${height-100}, 0)`)
     .append(() => legend({
       color, 
       title: title,
