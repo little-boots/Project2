@@ -161,7 +161,7 @@ def buildSQL(states=statelist,
                       'BUYER_COUNTY',
                       'YEAR',
                       'REPORTER_BUS_ACT',
-                      'BUYER_BUS_ACT'])\
+                      'buy_bus'])\
             ['pills']\
             .sum()\
             .reset_index()
