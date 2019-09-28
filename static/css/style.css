@@ -62,3 +62,18 @@ html {
   top: 100%;
   left: 0;
 }
+
+/* Sankey styling */
+.link {
+  fill: none;
+  stroke: lightseagreen;
+  stroke-opacity: .2;
+}
+
+.link:hover {
+  stroke-opacity: .5;
+}
+
+/* chartjs styling */
+.card-title {
+  text-align: c
