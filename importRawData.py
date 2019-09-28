@@ -84,7 +84,8 @@ def getStateTSV_local(states):
                     # Write the header to a new TSV file
                     with open(f'state/{state}.tsv', 'w') as write_tsv:
                         write_tsv.write('\t'.join(row))
-                continue
+                        write_tsv.write('\n')
+                #continue
 
             # Output to state-level TSV
             else:
@@ -93,7 +94,8 @@ def getStateTSV_local(states):
                 # Only write results from statelist to process in chunks
                 if us_state in states:
                     with open(f'state/{us_state}.tsv', 'a') as write_tsv:
-                        write_tsv.write('\t'.join(row) + '\n')
+                        write_tsv.write('\t'.join(row))
+                        write_tsv.write('\n')
 
 def moveStateTSV_remote(states):
     for state in states:
@@ -149,6 +151,9 @@ def buildSQL(states=statelist,
         df['YEAR'] = df['TRANSACTION_DATE'].astype('str').apply(parseDate)
         df['pills'] = df['DOSAGE_UNIT'].fillna(0)
 
+        # Simplify generating row counts
+        df['count'] = 1
+
         # Rename practiioners so you don't end up with too much data
         df.loc[df['buy_bus'] == 'PRACTITIONER', 'BUYER_NAME'] =\
             'JOE PRACTIONER, M.D.'
@@ -162,7 +167,7 @@ def buildSQL(states=statelist,
                       'YEAR',
                       'REPORTER_BUS_ACT',
                       'buy_bus'])\
-            ['pills']\
+            [['pills', 'count']]\
             .sum()\
             .reset_index()
 
@@ -193,15 +198,8 @@ def buildSQL(states=statelist,
     df_main.to_sql(f'total',
                  con=localengine)
 
-# Can't actually run this beacuse there is not sufficient disk space
-# Instead, run getState and moveState in small batches of 10 or so
-# Finally, run buildSQL on the full state list
-# Could set up this function to iterate in chunks over the state list but...
-# The DB is already built.
-def runAllStates(states):
-    getStateTSV_local(states)
-    moveStateTSV_remote(states)
-    buildSQL(states)
+getStateTSV_local(['WV'])
+moveStateTSV_remote(['WV'])
 
-buildSQL(states=['KY', 'WV', 'VA', 'SC'],
-         dbname='elChapo')
+buildSQL(states=['WV'],
+         dbname='checkWV')
