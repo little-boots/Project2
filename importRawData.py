@@ -35,8 +35,10 @@ stateChunk6 = statelist[50:]
 
 # Return numeric year from date string
 def parseDate(date):
-    dateFormat = re.compile(r'^\d{8}$')
-    if not re.match(dateFormat, date): return None
+    dateFormat = re.compile(r'^\d+$')
+    if not re.match(dateFormat, date):
+        print(f'parseDate encountered a problem with this date: {date}')
+        return None
     else: return int(date[-4:])
 
 # Get a dictionary mapping column names to row index
@@ -112,10 +114,13 @@ def moveStateTSV_remote(states):
 def buyerCat(buyStr):
     if 'PRACTITIONER' in buyStr: return 'PRACTITIONER'
     elif 'PHARMACY' in buyStr: return 'PHARMACY'
+    else: return None
 
 # Loop over all the TSVs, build dataframes, merge, and output
 def buildSQL(states=statelist,
              dbname='transactions'):
+
+    # Purge and initialize database file
     try:
         os.remove(f'db/{dbname}.sqlite')
     except OSError:
@@ -144,6 +149,9 @@ def buildSQL(states=statelist,
                          skip_blank_lines=False
                          )
 
+        # NOTE: Somehow getting bad row counts in final data.  Found TSVs
+        #  -- : were correct.  Cutting these steps to simplify/troubleshoot
+        #  -- : pandas code.
         # Rename practitioners to reduce data
         df['buy_bus'] = df['BUYER_BUS_ACT'].apply(buyerCat)
 
@@ -166,7 +174,7 @@ def buildSQL(states=statelist,
                       'BUYER_COUNTY',
                       'YEAR',
                       'REPORTER_BUS_ACT',
-                      'buy_bus'])\
+                      'BUYER_BUS_ACT'])\
             [['pills', 'count']]\
             .sum()\
             .reset_index()
@@ -179,7 +187,7 @@ def buildSQL(states=statelist,
                              'BUYER_COUNTY':          'us_county',
                              'YEAR':                  'year',
                              'REPORTER_BUS_ACT':      'reporter_bus',
-                             'buy_bus':               'buyer_bus',
+                             'BUYER_BUS_ACT':         'buyer_bus',
                              'pills':                 'tot_pills'})
 
         dt = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
@@ -198,8 +206,110 @@ def buildSQL(states=statelist,
     df_main.to_sql(f'total',
                  con=localengine)
 
-getStateTSV_local(['WV'])
-moveStateTSV_remote(['WV'])
+def checkSize(states):
+    totsize = 0
+    for state in states:
+        try:
+            totsize += os.path.getsize(f'data/statelevel/{state}.tsv')
+        except:
+            print(f'Skipping {state}!')
+    sizeGB = round(totsize * 1024**-3, 1)
+    print(f'All file size: {sizeGB} GB')
 
-buildSQL(states=['WV'],
-         dbname='checkWV')
+# checkSize(statelist)
+
+def checkCts(state):
+    tsv_total = 0
+    rowIndex = getRowIndex()
+
+    # Iterate over all rows
+    with open(f'data/statelevel/{state}.tsv','r') as read_tsv:
+        for row in csv.reader(read_tsv,
+                              delimiter='\t'):
+            tsv_total += 1
+
+    print(f'{state} TSV has {tsv_total} lines')
+
+    df = pd.read_csv(f'data/statelevel/{state}.tsv',
+                        delimiter='\t',
+                        usecols=[
+                            rowIndex['Combined_Labeler_Name'],
+                            rowIndex['Reporter_family'],
+                            rowIndex['BUYER_NAME'],
+                            rowIndex['BUYER_STATE'],
+                            rowIndex['BUYER_COUNTY'],
+                            rowIndex['TRANSACTION_DATE'],
+                            rowIndex['DOSAGE_UNIT'],
+                            rowIndex['REPORTER_BUS_ACT'],
+                            rowIndex['BUYER_BUS_ACT']
+                        ],
+                        engine='c',
+                        skip_blank_lines=False
+                        )
+
+    df_rows = df.shape[0]
+
+    print(f'{state} dataframe has {df_rows} rows')
+
+    df['YEAR'] = df['TRANSACTION_DATE'].astype('str').apply(parseDate)
+    df['pills'] = df['DOSAGE_UNIT'].fillna(0)
+    df['count'] = 1
+
+    # NOTE: This works
+    """
+    df_gb_simple = df\
+        .groupby(['BUYER_STATE'])\
+        [['pills', 'count']]\
+        .sum()\
+        .reset_index()
+
+    df_gb = df\
+        .groupby(['BUYER_STATE',
+                  'YEAR'])\
+        [['pills', 'count']]\
+        .sum()\
+        .reset_index()
+
+    print(df_gb)
+    """
+
+    df_gb = df\
+        .groupby(['Combined_Labeler_Name',
+                  'Reporter_family',
+                  'BUYER_NAME',
+                  'BUYER_STATE',
+                  'BUYER_COUNTY',
+                  'YEAR',
+                  'REPORTER_BUS_ACT',
+                  'BUYER_BUS_ACT'])\
+        [['pills', 'count']]\
+        .sum()\
+        .reset_index()
+
+    df_gb_gb = df_gb\
+        .groupby(['BUYER_STATE'])\
+        [['pills','count']]\
+        .sum()\
+        .reset_index()
+
+    print(df_gb_gb)
+
+#checkCts('WV')
+
+def runAll(states_,
+           dbname_):
+    getStateTSV_local(states_)
+    moveStateTSV_remote(states_)
+    buildSQL(states=states_,
+            dbname=dbname_)
+
+#buildSQL(states=statelist,
+#         dbname='allStates')
+
+
+
+buildSQL(states=['WV', 'KY', 'SC', 'VA'],
+         dbname='finalDB')
+
+# runAll(['WV', 'KY', 'SC', 'VA'],
+#        'quadState')
