@@ -19,7 +19,7 @@ function buildChart(state,county) {
             datasets: [
                 // first series
                 {
-                label: 'ARC States',
+                label: 'Multi-State',
                 data: data.ppc_nation,
                 backgroundColor: 'transparent',
                 borderColor: colors[0],

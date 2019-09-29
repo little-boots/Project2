@@ -168,12 +168,12 @@ def sankeyData(state,county):
     connection.close()
 
     # get the part of the data frame that we care about for the sankey
-    smaller_df = county_data[['manufacturer_name','distributor_name','tot_pills']].copy()
+    smaller_df = county_data[['manufacturer_name','distributor_name','buyer_name','tot_pills']].copy()
 
-    # group by manufactorer and distributor
-    smaller_grouped = smaller_df.groupby(['manufacturer_name','distributor_name'])
+    # group by reporter and buyer
+    smaller_grouped = smaller_df.groupby(['manufacturer_name','distributor_name','buyer_name'])
 
-    # sum total_pills and then use reset_index() to convert back to a dataframe
+    # sum total_pills and then use reset_index() to convert back to a data frame
     df = smaller_grouped['tot_pills'].sum().reset_index()
 
     # sort from largest to smallest total_pills
@@ -182,7 +182,6 @@ def sankeyData(state,county):
     # set the index back to 0, 1, 2, etc.
     df.index = range(len(df.index))
 
-    # grab only the 20 largest manufacturer/distributor combinations 
     df = df.iloc[:20]
 
     # build a list of dictionaries of nodes {"node":<integer>,"name":<string>}
@@ -195,31 +194,42 @@ def sankeyData(state,county):
             nodes.append({"node":node_counter,"name":row[0]})
             node_counter = node_counter + 1
 
-    # loop through the buyers
+    # loop through the distributors
     for i,row in df.iterrows():
         if not any(node.get('name', None) == row[1] for node in nodes):
             nodes.append({"node":node_counter,"name":row[1]})
+            node_counter = node_counter + 1
+
+    # loop through the buyers
+    for i,row in df.iterrows():
+        if not any(node.get('name', None) == row[2] for node in nodes):
+            nodes.append({"node":node_counter,"name":row[2]})
             node_counter = node_counter + 1
 
     # create a dataframe from the dictionary of nodes
     nodes2 = pd.DataFrame.from_dict(nodes)
 
     # join the nodes dataframe to the grouped df to associate the source and target info with the proper nodes
-    temp1 = pd.merge(nodes2,df, how = 'inner', left_on = 'name',right_on ='manufacturer_name')
+    temp1 = pd.merge(nodes2,df, how = 'inner', left_on = 'name', right_on = 'buyer_name')
     temp2 = pd.merge(nodes2,temp1, how = 'inner', left_on = 'name', right_on = 'distributor_name')
-    temp3 = temp2.drop(columns = ['name_x', 'name_y'])
+    temp3 = pd.merge(nodes2,temp2, how = 'inner', left_on = 'name',right_on ='manufacturer_name')
+
+    temp4 = temp3.drop(columns = ['name','name_x', 'name_y'])
 
     # rename some columns just for the sake of clarity
-    temp4 = temp3.rename(columns={'node_y':'source','node_x':'target','tot_pills':'value'})
+    links_df = temp4.rename(columns={'node':'node_manufacturer','node_x':'node_distributor','node_y':'node_buyer','percentage':'value'})
 
-    # create the dataframe of links
-    links_df = temp4[['source','target','value']].sort_values('value',ascending=False)
-
-    # build dictionary of links, e.g. {"source":0,"target":2,"value":1}
+    # build dictionary of links {"source":0,"target":2,"value":1}
+    # loop through manufacturer to distributor
     # convert Pandas integer datatype to Python integer datatypes before jsonify
     links = []
+
     for i,row in links_df.iterrows():
-        links.append({"source":int(row[0]),"target":int(row[1]),"value":int(row[2])})  
+        links.append({"source":int(row[0]),"target":int(row[1]),"value":int(row[6])})
+
+    # loop through distributor to buyer
+    for i,row in links_df.iterrows():
+        links.append({"source":int(row[1]),"target":int(row[2]),"value":int(row[6])})
    
     sankey_dict = {"nodes":nodes,"links":links}
 
