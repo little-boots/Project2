@@ -255,24 +255,7 @@ def checkCts(state):
     df['pills'] = df['DOSAGE_UNIT'].fillna(0)
     df['count'] = 1
 
-    # NOTE: This works
-    """
-    df_gb_simple = df\
-        .groupby(['BUYER_STATE'])\
-        [['pills', 'count']]\
-        .sum()\
-        .reset_index()
-
-    df_gb = df\
-        .groupby(['BUYER_STATE',
-                  'YEAR'])\
-        [['pills', 'count']]\
-        .sum()\
-        .reset_index()
-
-    print(df_gb)
-    """
-
+    # Do the grouping in the actual code
     df_gb = df\
         .groupby(['Combined_Labeler_Name',
                   'Reporter_family',
@@ -286,6 +269,7 @@ def checkCts(state):
         .sum()\
         .reset_index()
 
+    # Group by state to check the row counts against the TSV
     df_gb_gb = df_gb\
         .groupby(['BUYER_STATE'])\
         [['pills','count']]\
@@ -303,10 +287,9 @@ def runAll(states_,
     buildSQL(states=states_,
             dbname=dbname_)
 
+# This would take a long time
 #buildSQL(states=statelist,
 #         dbname='allStates')
-
-
 
 buildSQL(states=['WV', 'KY', 'SC', 'VA'],
          dbname='finalDB')

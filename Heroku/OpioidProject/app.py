@@ -17,6 +17,8 @@ app = Flask(__name__)
 # Database Setup
 #################################################
 
+print(os.environ.get('DATABASE_URL', ''))
+
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DATABASE_URL', '') or "sqlite:///db/tof.sqlite"
 tof_db_con = os.environ.get('DATABASE_URL', '') or "sqlite:///db/tof.sqlite"
 db = SQLAlchemy(app)
@@ -47,14 +49,14 @@ def manufacturer():
     return render_template("manufacturer.html")
 
 
-# Next routes are API endpoints used to query 
+# Next routes are API endpoints used to query
 # the backend needed for all visualizations
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Used by: Manufacturers Choropleth Visualization
 #------------------------------------------------
-# This is an API endpoint that returns top 10 
-# manufacturers ordered in descending order by 
+# This is an API endpoint that returns top 10
+# manufacturers ordered in descending order by
 # number of pills distributed.
 @app.route('/top10manufacturers')
 def top10manufacturers():
@@ -124,7 +126,7 @@ def heatlist():
         "addiction_index": my_df.addiction_index.values.tolist()
     }
 
-    # Format the data to send as json   
+    # Format the data to send as json
     return jsonify(my_list)
 
 # the route to render the sankey diagram
@@ -209,10 +211,10 @@ def chartData(state,county):
     for row in county_result:
         years.append(row[2])
         tot_pills_county.append(row[3])
-    
+
     for row in state_result:
         tot_pills_state.append(row[2])
-    
+
     for row in nation_result:
         tot_pills_nation.append(row[1])
 
@@ -221,10 +223,10 @@ def chartData(state,county):
 
     for row in state_pop:
         pop_state.append(row[2])
-    
+
     for row in nation_pop:
         pop_nation.append(row[1])
-    
+
     for i in range(0,7):
         ppc_county.append(tot_pills_county[i]/pop_county[i])
         ppc_state.append(tot_pills_state[i]/pop_state[i])
@@ -264,7 +266,7 @@ def sankeyData(state,county):
     # set the index back to 0, 1, 2, etc.
     df.index = range(len(df.index))
 
-    # grab only the 20 largest manufacturer/distributor combinations 
+    # grab only the 20 largest manufacturer/distributor combinations
     df = df.iloc[:20]
 
     # build a list of dictionaries of nodes {"node":<integer>,"name":<string>}
@@ -301,8 +303,8 @@ def sankeyData(state,county):
     # convert Pandas integer datatype to Python integer datatypes before jsonify
     links = []
     for i,row in links_df.iterrows():
-        links.append({"source":int(row[0]),"target":int(row[1]),"value":int(row[2])})  
-   
+        links.append({"source":int(row[0]),"target":int(row[1]),"value":int(row[2])})
+
     sankey_dict = {"nodes":nodes,"links":links}
 
     return jsonify(sankey_dict)
